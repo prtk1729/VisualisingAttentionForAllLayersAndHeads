@@ -65,3 +65,22 @@ class PositionalEncoding(nn.Module):
         seq_len = x.shape[1] # Need to control this as window
         x_cat = x + self.pe[: , :seq_len, :].requires_grad(False) # Don't track pe, non-learnable
         return self.dropout(x_cat) 
+
+
+
+class LayerNormalisation(nn.Module):
+    def __init__(self, eps: float):
+        super().__init__()
+        
+        # Init to multiplicative id and additive id resp.
+        # Only learnable params
+        self.alpha = nn.Parameter(torch.ones(1))
+        self.bias = nn.Parameter(torch.zeros(1))
+        self.eps = eps
+
+    def forward(self, x):
+        # keepdims = True, for compatibilty during (x - mu) else broadcasting issues
+        mu = x.mean(dim = -1, keepdims=True) # across the feature-space of each seq i.e last dim
+        std = x.std(dim = -1, keepdims=True)  # across the feature-space of each seq i.e last dim  
+
+        return (x - mu) / torch.sqrt( std**2 + self.eps  )
